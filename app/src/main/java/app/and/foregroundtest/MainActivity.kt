@@ -11,7 +11,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         mainButtonStart.setOnClickListener {
-            ContextCompat.startForegroundService(this, TestService.getIntent(this, 10))
+            ContextCompat.startForegroundService(applicationContext, TestService.getIntent(this, 10))
         }
     }
 }

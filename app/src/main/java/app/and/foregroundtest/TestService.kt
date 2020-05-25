@@ -8,10 +8,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.os.Build
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.os.*
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -31,12 +28,22 @@ class TestService : Service(){
     }
 
     private val builder by lazy {notificationBuilder()}
+//    private val wakeLock by lazy {
+//        (getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName.WAKELOCK")
+//    }
+    private lateinit var wakeLock: PowerManager.WakeLock
+
+    override fun onCreate() {
+        super.onCreate()
+        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName.wakelock")
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("SERVICE", "flags: $flags, startId: $startId")
         intent?.also { safeIntent ->
             val count = safeIntent.getIntExtra(KEY_COUNT, 10)
             val manager = (getSystemService(Context.NOTIFICATION_SERVICE)) as NotificationManager
+            wakeLock.acquire((count+5) * 1000L)
             startForeground(NOTIFICATION_ID, builder.build())
             manager.notify(NOTIFICATION_ID, builder.setProgress(count, 0, false).build())
             TaskRunner(count).run { i ->
@@ -44,7 +51,8 @@ class TestService : Service(){
                 if(i == -1){
                     manager.notify(NOTIFICATION_ID, builder.setProgress(0, 0, false).build())
                     stopForeground(false)
-                    stopSelf()
+                    wakeLock.release()
+//                    stopSelf()
                 } else {
                     manager.notify(NOTIFICATION_ID, builder.setContentText("Count: $i").setProgress(count, i, false).build())
                 }
